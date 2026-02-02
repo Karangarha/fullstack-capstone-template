@@ -97,5 +97,25 @@ router.post("/login", async (req, res) => {
       .json({ error: "Internal server error", details: e.message });
   }
 });
+router.put("/update", async (req, res) => {
+  // Task 2: Validate the input using `validationResult` and return approiate message if there is an error.
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.error("Validation errors in update request", errors.array());
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    // Task 3: Check if `email` is present in the header and throw an appropriate error message if not present.
+    // Task 4: Connect to MongoDB
+    // Task 5: find user credentials in database
+    existingUser.updatedAt = new Date();
+    // Task 6: update user credentials in database
+    // Task 7: create JWT authentication using secret key from .env file
+    res.json({ authtoken });
+  } catch (e) {
+    return res.status(500).send("Internal server error");
+  }
+});
 
 module.exports = router;
