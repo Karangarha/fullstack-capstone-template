@@ -5,6 +5,8 @@ const connectToDatabase = require("../models/db");
 const router = express.Router();
 const dotenv = require("dotenv");
 const pino = require("pino"); // Import Pino logger
+const { validationResult } = require("express-validator");
+const { ObjectId } = require('mongodb');
 dotenv.config();
 
 const logger = pino(); // Create a Pino logger instance
@@ -104,16 +106,62 @@ router.put("/update", async (req, res) => {
     logger.error("Validation errors in update request", errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
+  // Task 3: Check if the user is logged in
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    logger.error("No token provided");
+    return res.status(401).json({ error: "No token provided" });
+  }
+  // Task 4: Verify the token
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded.user;
+  } catch (e) {
+    logger.error("Invalid token");
+    return res.status(401).json({ error: "Invalid token" });
+  }
 
   try {
-    // Task 3: Check if `email` is present in the header and throw an appropriate error message if not present.
-    // Task 4: Connect to MongoDB
-    // Task 5: find user credentials in database
-    existingUser.updatedAt = new Date();
-    // Task 6: update user credentials in database
+    const userId = req.user.id;
+    const db = await connectToDatabase();
+    const collection = db.collection("users");
+
+    // Convert userId string to ObjectId
+    const id = new ObjectId(userId);
+
+    const existingUser = await collection.findOne({ _id: id });
+    if (!existingUser) {
+      logger.error('User not found');
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { firstName, lastName, email, password, name } = req.body;
+    const updateData = {};
+    if (firstName || name) updateData.firstName = firstName || name;
+    if (lastName) updateData.lastName = lastName;
+    if (email) updateData.email = email;
+
+    if (password) {
+      const salt = await bcryptjs.genSalt(10);
+      updateData.password = await bcryptjs.hash(password, salt);
+    }
+
+    const updatedUser = await collection.findOneAndUpdate(
+      { _id: id },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
     // Task 7: create JWT authentication using secret key from .env file
+    const payload = {
+      user: {
+        id: updatedUser._id.toString(),
+      },
+    };
+    const authtoken = jwt.sign(payload, JWT_SECRET);
+
     res.json({ authtoken });
   } catch (e) {
+    logger.error(e);
     return res.status(500).send("Internal server error");
   }
 });

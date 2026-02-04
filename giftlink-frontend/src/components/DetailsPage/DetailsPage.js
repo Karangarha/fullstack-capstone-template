@@ -21,7 +21,7 @@ function DetailsPage() {
     const fetchGift = async () => {
       try {
         // Task 2: Fetch gift details
-        const url = `${urlConfig.backendUrl}/api/gifts/${productId}`;
+        const url = `${urlConfig.backendUrl}/api/gifts/details/${productId}`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Network response was not ok");

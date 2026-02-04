@@ -22,17 +22,17 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/details/:id", async (req, res) => {
   try {
     // Task 1: Connect to MongoDB and store connection to db constant
-    const db = await connectionToDatabase();
+    const db = await connectToDatabase();
 
     // Task 2: use the collection() method to retrieve the gift collection
     const collection = db.collection("gifts");
 
     const id = req.params.id;
 
-    // Task 3: Find a specific gift by ID using the collection.fineOne method and store in constant called gift
+    // Task 3: Find a specific gift by ID using the collection.findOne method and store in constant called gift
     const gift = await collection.findOne({ id: id });
 
 
@@ -54,7 +54,7 @@ router.post("/", async (req, res, next) => {
     const collection = db.collection("gifts");
     const gift = await collection.insertOne(req.body);
 
-    res.status(201).json(gift.ops[0]);
+    res.status(201).json(gift.insertedId);
   } catch (e) {
     next(e);
   }
